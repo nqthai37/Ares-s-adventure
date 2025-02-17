@@ -1,14 +1,22 @@
 
-# r = (1,0)
-# l = (-1,0)
-# u = (0,-1)
-# d = (0,1)
+WALL = "#"
+FREE_SPACE = " "
+STONE = "$"
+ARES = "@"
+SWITCH = "."
+STONE_PLACED_ON_SWITCH = "*"
+ARES_ON_SWITCH = "+"
+u = (0,1)
+d = (0, -1)
+l = (1, 0)
+r = (-1, 0)
+
 class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
-directions = {"r" : Point(1,0), "l" : Point(-1,0), "u" : Point(0,-1), "d" : Point(0,1)}
+directions = [ u, d, l, r]
 
 class Stone:
     def __init__(self, point , weight):
@@ -46,23 +54,31 @@ class Matrix:
         self.matrix = matrix
         self.stone = stone
         self.switch = switch
+    def isValid(self, point, visited):
+        if point.x < 0 or point.y < 0 or point.x >= len(self.matrix) or point.y >= len(self.matrix[0]):
+            return False
+        if visited[point.x][point.y] == True:
+            return False
+        if self.matrix[point.x][point.y] == WALL:
+            return False
+        return True
 
     def BFS(self, start , finish):
         queue = []
         queue.append(self.agent)
+        visited = [[False for i in range(len(self.matrix[0]))] for j in range(len(self.matrix))]
         while queue:
+            path = ""
             current = queue.pop(0)
+            if current == finish:
+                return path
             for direction in directions:
-                next = Point(current.x + directions[direction].x, current.y + directions[direction].y)
-                if self.matrix[next.x][next.y] == '#':
-                    continue
-                if self.matrix[next.x][next.y] == '.':
-                    return True
-                if self.matrix[next.x][next.y] == '$':
-                    for s in self.stone:
-                        if s.point == next:
-                            s.point = Point(next.x + directions[direction].x, next.y + directions[direction].y)
-                            break
-                queue.append(next)
-        return False
+                next = Point(current.x + direction[0], current.y + direction[1])
+                if self.isValid(next, visited):
+                    queue.append(next)
+                    visited[next.x][next.y] = True
+                    path += direction
+        return path
+    
+                
     
