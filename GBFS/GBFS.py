@@ -85,14 +85,14 @@ def move(player, stones, direction):
     dx, dy = direction
     nx, ny = x + dx, y + dy
     is_pushed = False
-    new_stones = list(stones)  # Tạo bản sao để tránh thay đổi trạng thái gốc
+    new_stones = list(stones)  
     temp = 0
 
     for i, s in enumerate(new_stones):
-        if s.point == (nx, ny):  # Nếu có viên đá tại vị trí mới
+        if s.point == (nx, ny):
             is_pushed = True
             temp = s.weight
-            new_stones[i] = Stone((nx + dx, ny + dy), temp)  # Cập nhật vị trí viên đá
+            new_stones[i] = Stone((nx + dx, ny + dy), temp)
             break
 
     return (nx, ny), tuple(new_stones), is_pushed, temp
