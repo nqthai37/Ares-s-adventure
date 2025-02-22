@@ -54,11 +54,9 @@ def set_value(file):
                     walls.add((i, j))
 
 def heuristic(stones):
-    """Tính toán heuristic: Khoảng cách Manhattan tối thiểu từ mỗi viên đá đến các công tắc"""
     return sum(min(abs(s.point[0] - sw[0]) + abs(s.point[1] - sw[1]) for sw in switches) for s in stones)
 
 def set_valid_move(player, stones):
-    """Tìm các nước đi hợp lệ"""
     x, y = player
     valid_moves = []
     stone_positions = {s.point for s in stones}
@@ -76,11 +74,9 @@ def set_valid_move(player, stones):
     return valid_moves    
 
 def is_win(stones):
-    """Kiểm tra xem tất cả viên đá có nằm trên công tắc không"""
     return all(s.point in switches for s in stones)
 
 def move(player, stones, direction):
-    """Di chuyển nhân vật và cập nhật vị trí viên đá nếu đẩy"""
     x, y = player
     dx, dy = direction
     nx, ny = x + dx, y + dy
@@ -98,7 +94,6 @@ def move(player, stones, direction):
     return (nx, ny), tuple(new_stones), is_pushed, temp
 
 def greedy_best_first_search(cur_player, cur_stones):
-    """Thuật toán Greedy Best-First Search với tổng trọng số khi đẩy"""
     node_generated = 0
     q = []
     heapq.heappush(q, (heuristic(cur_stones), cur_player, cur_stones, 0, 0, []))  
@@ -131,7 +126,6 @@ def greedy_best_first_search(cur_player, cur_stones):
 
 
 def convert_path(direction, is_pushed):
-    """Chuyển đổi nước đi thành chuỗi"""
     if direction == UP:
         return ['u'] if not is_pushed else ['U']
     if direction == DOWN:
