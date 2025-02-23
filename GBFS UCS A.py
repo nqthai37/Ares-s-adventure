@@ -1,5 +1,7 @@
 import heapq
 from queue import Queue
+import time
+import psutil
 
 WALL = "#"
 FREE_SPACE = " "
@@ -154,13 +156,17 @@ def uniform_cost_search(cur_player, cur_stones):
     heapq.heappush(q, (0, cur_player, cur_stones, 0, [])) 
     visited = set()
     best_cost = {}
-
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+    
     while q:
         weight, now_player, now_stones, steps, path = heapq.heappop(q)
         state_key = (now_player, tuple(s.point for s in now_stones))
                                 # use tuple to store stones so that it can be hashable -> can be used in set and dict
         if is_win(now_stones):
-            return "UCS", steps, weight, node_generated, path
+            mem_after = process.memory_info().rss
+            mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+            return "UCS", steps, weight, node_generated, path, mem_usage
 
         visited.add(state_key)
         moves = set_valid_move(now_player, now_stones)
@@ -173,14 +179,17 @@ def uniform_cost_search(cur_player, cur_stones):
             new_cost = weight + stone_weight + 1
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
-            if new_state_key not in visited and new_state_key not in best_cost or new_cost < best_cost.get(new_state_key, float("inf")):
+            if new_state_key not in visited and new_state_key not in best_cost:
+                best_cost[new_state_key] = new_cost
+                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
+            elif new_cost < best_cost[new_state_key]:
                 best_cost[new_state_key] = new_cost
                 heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
 
             node_generated += 1
 
     print("No solution found.")
-    return "UCS", 0, 0, 0, 0
+    return "UCS", 0, 0, 0, 0, mem_usage
 
 def greedy_best_first_search(cur_player, cur_stones):
     node_generated = 0
@@ -188,13 +197,17 @@ def greedy_best_first_search(cur_player, cur_stones):
     heapq.heappush(q, (heuristic(cur_stones), cur_player, cur_stones, 0, 0, []))  
     visited = set()
     best_cost = {}
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
     
     while q:
         _, now_player, now_stones, steps, total_weight, path = heapq.heappop(q)
         state_key = (now_player, tuple(s.point for s in now_stones))
         
         if is_win(now_stones):
-            return "GBFS", steps, total_weight, node_generated, path
+            mem_after = process.memory_info().rss
+            mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+            return "GBFS", steps, total_weight, node_generated, path, mem_usage
 
         visited.add(state_key)
 
@@ -214,7 +227,7 @@ def greedy_best_first_search(cur_player, cur_stones):
                 heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, new_total_weight, path + convert_path(m, is_pushed)))
             node_generated += 1
 
-    return "GBFS", 0, 0, 0, []
+    return "GBFS", 0, 0, 0, [], 0
 
 def A_star(cur_player, cur_stones):
     node_generated = 0
@@ -223,13 +236,17 @@ def A_star(cur_player, cur_stones):
                       # fn, weight (g(n)), player, stones, steps, path
     visited = set()
     best_cost = {}
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
 
     while q:
         _, weight, now_player, now_stones, steps, path = heapq.heappop(q)
         state_key = (now_player, tuple(s.point for s in now_stones))
                                 # use tuple to store stones so that it can be hashable -> can be used in set and dict
         if is_win(now_stones):
-            return "A*", steps, weight, node_generated, path
+            mem_after = process.memory_info().rss
+            mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+            return "A*", steps, weight, node_generated, path, mem_usage
 
         visited.add(state_key)
         moves = set_valid_move(now_player, now_stones)
@@ -244,15 +261,16 @@ def A_star(cur_player, cur_stones):
             fn = new_cost + hn
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
-            if new_state_key not in visited and new_state_key not in best_cost or fn < best_cost.get(new_state_key, float("inf")):
+            if new_state_key not in visited and new_state_key not in best_cost or fn < best_cost[new_state_key]:
                 best_cost[new_state_key] = fn
                 heapq.heappush(q, (fn, new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
 
 
             node_generated += 1
+            
 
     print("No solution found.")
-    return "A*", 0, 0, 0, 0
+    return "A*", 0, 0, 0, 0, mem_usage
 
 def convert_path(direction, is_pushed):
     if direction == UP:
@@ -264,15 +282,45 @@ def convert_path(direction, is_pushed):
     if direction == RIGHT:
         return ['r'] if not is_pushed else ['R']
 
+def measure_algorithm(algorithm, player, stones):
+      # Bộ nhớ trước khi chạy
+    start_time = time.time()  # Bắt đầu đo thời gian
+
+    result = algorithm(player, stones )  # Chạy thuật toán
+
+    end_time = time.time() 
+    elapsed_time = end_time - start_time
+    
+    
+    return result, elapsed_time
+
 def main():
     global player, stones
     set_value("input.txt")
-    algorithm, steps, total_weight, node_generated, path = A_star(player, stones)
+    (algorithm, steps, total_weight, node_generated, path, mem_usage), time = measure_algorithm(uniform_cost_search, player, stones)
     print("Algorithm:", algorithm)
     print("Steps:", steps)
     print("Total Stone Weight Pushed:", total_weight)
     print("Node generated:", node_generated)
+    print(f"Time: {time:.2f} secs")
+    print(f"Memory usage: {mem_usage:.2f} MB")
     print("Path:", "".join(path))
     
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
