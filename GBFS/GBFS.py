@@ -117,7 +117,7 @@ def greedy_best_first_search(cur_player, cur_stones):
             if new_state_key in visited:
                 continue
 
-            new_total_weight = total_weight + (weight if is_pushed else 0)
+            new_total_weight = total_weight + weight + 1 
 
             heapq.heappush(q, (heuristic(new_stones), new_player, new_stones, steps + 1, new_total_weight, path + convert_path(m, is_pushed)))
             node_generated += 1
