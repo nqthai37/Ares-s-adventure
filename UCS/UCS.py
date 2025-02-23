@@ -197,7 +197,7 @@ def main():
     print("Steps:", steps)
     print("Weight:", weight)
     print("Node generated:", node_generated)
-    print("Path:", path)
+    print("Path:", "".join(path))
     
 if __name__ == "__main__":
     main()
