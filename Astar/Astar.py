@@ -154,7 +154,7 @@ def A_star(cur_player, cur_stones):
     node_generated = 0
     q = []
     heapq.heappush(q, (0, 0, cur_player, cur_stones, 0, [])) 
-                      # fn, weight, player, stones, steps, path
+                      # fn, weight (g(n)), player, stones, steps, path
     visited = set()
     best_cost = {}
 
@@ -178,12 +178,10 @@ def A_star(cur_player, cur_stones):
             fn = new_cost + hn
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
-            if new_state_key not in visited and new_state_key not in best_cost:
+            if new_state_key not in visited and new_state_key not in best_cost or fn < best_cost[new_state_key]:
                 best_cost[new_state_key] = fn
                 heapq.heappush(q, (fn, new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
-            elif fn < best_cost[new_state_key]:
-                best_cost[new_state_key] = fn
-                heapq.heappush(q, (fn, new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
+
 
             node_generated += 1
 
