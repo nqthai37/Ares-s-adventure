@@ -98,6 +98,7 @@ def greedy_best_first_search(cur_player, cur_stones):
     q = []
     heapq.heappush(q, (heuristic(cur_stones), cur_player, cur_stones, 0, 0, []))  
     visited = set()
+    best_cost = {}
     
     while q:
         _, now_player, now_stones, steps, total_weight, path = heapq.heappop(q)
@@ -106,20 +107,19 @@ def greedy_best_first_search(cur_player, cur_stones):
         if is_win(now_stones):
             return "GBFS", steps, total_weight, node_generated, path
 
-        if state_key in visited:
-            continue
         visited.add(state_key)
 
         moves = set_valid_move(now_player, now_stones)
         for m in moves:
             new_player, new_stones, is_pushed, weight = move(now_player, now_stones, m)
             new_state_key = (new_player, tuple(s.point for s in new_stones))
-            if new_state_key in visited:
-                continue
-
+            new_cost = heuristic(new_stones)
             new_total_weight = total_weight + weight + 1 
-
-            heapq.heappush(q, (heuristic(new_stones), new_player, new_stones, steps + 1, new_total_weight, path + convert_path(m, is_pushed)))
+            
+            if new_state_key not in (visited, best_cost) or new_cost < best_cost[new_state_key]:
+                best_cost[new_state_key] = new_cost
+                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, new_total_weight, path + convert_path(m, is_pushed))
+            
             node_generated += 1
 
     return "GBFS", 0, 0, 0, []
