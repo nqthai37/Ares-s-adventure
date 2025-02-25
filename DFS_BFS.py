@@ -57,6 +57,7 @@ def find_obj_pos(matrix, height, width): # position: [x,y]
     for i in range(height):
         for j in range(width):
             if matrix[i, j] == STONE:
+                # print(matrix[1,1])
                 stones.append(Stone(i, j,weights[cnt]))
                 cnt+=1
             elif matrix[i, j] == SWITCH:
@@ -69,6 +70,9 @@ def find_obj_pos(matrix, height, width): # position: [x,y]
             elif matrix[i, j] == ARES_ON_SWITCH:
                 ares = (i, j)
                 switches.append((i, j))
+    
+    # for stone in stones:
+    #     print (stone.x, stone.y, stone.weight)
 
 def is_deadlock(matrix, height, width, pos):
     if matrix[pos] == STONE:
@@ -86,110 +90,118 @@ def is_deadlock(matrix, height, width, pos):
                     continue
             return False
     return True
+def can_move(matrix, height, width, pos, move, stones):
+    # global stones
 
-def can_move(matrix, height, width, pos, move):
-    stoneMoved = False
+    stone_moved = False
+    moved_stone_weight = 0
     new_pos = (pos[0] + move[0], pos[1] + move[1])
-    # check if new position is out of the map
-    if new_pos[0] < 0 or new_pos[0] >= height or new_pos[1] < 0 or new_pos[1] >= width:
-        return matrix, pos, stoneMoved
-    # check if new position is wall
-    if matrix[new_pos] == WALL:
-        return matrix, pos, stoneMoved
-    if matrix[new_pos] == STONE_PLACED_ON_SWITCH:
-        new_stone_pos = (new_pos[0] + move[0], new_pos[1] + move[1])
-        if new_stone_pos[0] < 0 or new_stone_pos[0] >= height or new_stone_pos[1] < 0 or new_stone_pos[1] >= width:
-            return matrix, pos, stoneMoved
-        if matrix[new_stone_pos] == WALL or matrix[new_stone_pos] == STONE:
-            return matrix, pos, stoneMoved
-        stoneMoved = True
-        matrix[new_stone_pos] = STONE
-        matrix[new_pos] = ARES_ON_SWITCH
-        matrix[pos] = FREE_SPACE
-        return matrix, new_pos, stoneMoved
-    if matrix[new_pos] == SWITCH:
-        matrix[new_pos] = ARES_ON_SWITCH
-        matrix[pos] = FREE_SPACE
-        return matrix, new_pos, stoneMoved
     
+    def is_out_of_bounds(p):
+        return p[0] < 0 or p[0] >= height or p[1] < 0 or p[1] >= width
+    
+    def move_stone(current, target):
+        nonlocal stone_moved, moved_stone_weight, stones
 
-    # check if new position is stone
-    if matrix[new_pos] == STONE:
-        new_stone_pos = (new_pos[0] + move[0], new_pos[1] + move[1]) 
-        if new_stone_pos[0] < 0 or new_stone_pos[0] >= height or new_stone_pos[1] < 0 or new_stone_pos[1] >= width:
-            return matrix, pos, stoneMoved
-        if matrix[new_stone_pos] == WALL or matrix[new_stone_pos] == STONE:
-            return matrix, pos, stoneMoved
-        stoneMoved = True
-        if matrix[new_stone_pos] == SWITCH:
-            matrix[new_stone_pos] = STONE_PLACED_ON_SWITCH
-        else:
-            matrix[new_stone_pos] = STONE
-    matrix[new_pos] = ARES
-    if (matrix[pos] == ARES_ON_SWITCH):
-        matrix[pos] = SWITCH
+        if is_out_of_bounds(target) or matrix[target[0]][target[1]] in {WALL, STONE, STONE_PLACED_ON_SWITCH}:
+            return False
+        stone_moved = True
+        for i, stone in enumerate(stones):
+            if (stone.x, stone.y) == current:
+                stones[i] = Stone(target[0], target[1], stone.weight)
+                moved_stone_weight = stone.weight
+                break
+        matrix[current[0]][current[1]] = SWITCH if matrix[current[0]][current[1]] == STONE_PLACED_ON_SWITCH else FREE_SPACE
+        matrix[target[0]][target[1]] = STONE_PLACED_ON_SWITCH if matrix[target[0]][target[1]] == SWITCH else STONE
+        return True
+    
+    if is_out_of_bounds(new_pos) or matrix[new_pos[0]][new_pos[1]] == WALL:
+        return matrix, pos, stone_moved, moved_stone_weight
+    
+    if matrix[pos[0]][pos[1]] == ARES_ON_SWITCH:
+        matrix[pos[0]][pos[1]] = SWITCH
     else:
-        matrix[pos] = FREE_SPACE
-    return matrix, new_pos, stoneMoved
-
+        matrix[pos[0]][pos[1]] = FREE_SPACE
+    
+    if matrix[new_pos[0]][new_pos[1]] in {STONE, STONE_PLACED_ON_SWITCH}:
+        new_stone_pos = (new_pos[0] + move[0], new_pos[1] + move[1])
+        if not move_stone(new_pos, new_stone_pos):
+            return matrix, pos, stone_moved, moved_stone_weight
+    
+    matrix[new_pos[0]][new_pos[1]] = ARES_ON_SWITCH if matrix[new_pos[0]][new_pos[1]] == SWITCH else ARES
+    return matrix, new_pos, stone_moved, moved_stone_weight
 def is_solved(matrix):
     return all(matrix[x, y] == STONE_PLACED_ON_SWITCH for x, y in switches)
 
 def dfs(matrix, height, width, player_pos):
+    # print(player_pos)
     print('Depth-First Search')
-    cost =0
-    stack = [(matrix.copy(), player_pos, '',cost)]
+    step =0
+    weight =0
+    stack = [(matrix.copy(), player_pos, '',step,weight,stones.copy())]
     seen = set() # check if the state is visited
     moves = [(1, 0), (-1, 0), (0, -1), (0, 1)]
     
     while stack:
-        state, pos, path,cost = stack.pop()
+        state, pos, path, step, weight, current_stones = stack.pop()
         state_hash = hash(state.tobytes())
         if state_hash in seen:
             continue
         seen.add(state_hash)
         # check if the game is solved
         if is_solved(state):
-            print(f'[DFS] Solution found!\n\n{path}\n Cost: {cost}\n ')
-            return path
+            print(f'[DFS] Solution found!\n\n{path}\nStep: {step}\nWeight: {weight}\n')
+            return path, step,weight
         
         for move in moves:
-            temp_state = state.copy() 
-            new_state, new_pos, stoneMoved = can_move(temp_state, height, width, pos, move)
+            temp_state = state.copy()
+            new_stones = current_stones.copy()
+            new_state, new_pos, stone_moved, stone_weight = can_move(temp_state, height, width, pos, move, new_stones)
             if new_state is None:
                 continue
-
-            stack.append((new_state, new_pos, path + (direction[move].upper() if stoneMoved else direction[move]), cost +1))
+            new_weight = weight + (stone_weight if stone_moved else 0)
+            stack.append((new_state, new_pos, path + (direction[move].upper() if stone_moved else direction[move]), step +1, new_weight, new_stones))
     
     print('[DFS] Solution not found!')
     return None
 def bfs(matrix, height, width, player_pos):
     print('Breadth-First Search')
+    global stones
+
     initial_state = matrix.copy()
     seen = set()
-    cost =0
-    q = deque([(initial_state, player_pos, 0, '',cost)])
+    q = deque([(initial_state, player_pos, 0, '', 0, stones.copy())])
     moves = [(1, 0), (-1, 0), (0, -1), (0, 1)]
 
     while q:
-        state, pos, depth, path,cost = q.popleft()
-        # print(state)
+        state, pos, depth, path, total_weight, current_stones = q.popleft()
+
         state_hash = hash(state.tobytes())
         if state_hash in seen:
             continue
         seen.add(state_hash)
+
         if is_solved(state):
-            print(f'[BFS] Solution found!\n\n{path}\n Cost: {cost}\n')
-            return path
+            print(f'[BFS] Solution found!\n\n{path}\nStep: {depth}\nWeight: {total_weight}\n')
+            return path, depth, total_weight
+        
         for move in moves:
             temp_state = state.copy()
-            new_state, new_pos, stoneMoved = can_move(temp_state, height, width, pos, move)
+            new_stones = current_stones.copy()
+            new_state, new_pos, stone_moved, stone_weight = can_move(temp_state, height, width, pos, move, new_stones)
+            
             if new_state is None:
                 continue
-            q.append((new_state, new_pos, depth + 1, path + (direction[move].upper() if stoneMoved else direction[move]),cost +1))
+            
+            new_weight = total_weight + (stone_weight if stone_moved else 0)
+            
+            q.append((new_state, new_pos, depth + 1, 
+                      path + (direction[move].upper() if stone_moved else direction[move]), 
+                      new_weight, new_stones))
 
     print(f'[BFS] Solution not found!\n')
-    return (None, -1)
+    return None, -1, -1
+
 
 def solve_dfs(puzzle, height, width):
     return dfs(puzzle, height, width, ares)
@@ -198,7 +210,7 @@ def solve_bfs(puzzle, height, width):
 
 def test():
     for i in range (7,8):
-        filename = "Level/" + str(i) + ".txt"
+        filename = "D:/HCMUS/AI/Ares-s-adventure/Level/7.txt"
         print ("Level " + str(i))
         matrix, height, width = read_map(filename)
         find_obj_pos(matrix, height, width)
