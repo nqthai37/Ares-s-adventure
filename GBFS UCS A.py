@@ -179,13 +179,10 @@ def uniform_cost_search(cur_player, cur_stones):
             new_cost = weight + stone_weight + 1
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
-            if new_state_key not in visited and new_state_key not in best_cost:
+            if new_state_key not in visited and new_state_key not in best_cost or new_cost < best_cost.get(new_state_key, float("inf")):
                 best_cost[new_state_key] = new_cost
                 heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
-            elif new_cost < best_cost[new_state_key]:
-                best_cost[new_state_key] = new_cost
-                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
-
+                
             node_generated += 1
 
     print("No solution found.")
@@ -261,7 +258,7 @@ def A_star(cur_player, cur_stones):
             fn = new_cost + hn
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
-            if new_state_key not in visited and new_state_key not in best_cost or fn < best_cost[new_state_key]:
+            if new_state_key not in visited and new_state_key not in best_cost or fn < best_cost.get(new_state_key, float("inf")):
                 best_cost[new_state_key] = fn
                 heapq.heappush(q, (fn, new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
 
@@ -295,8 +292,8 @@ def measure_algorithm(algorithm, player, stones):
 
 def main():
     global player, stones
-    set_value("input.txt")
-    (algorithm, steps, total_weight, node_generated, path, mem_usage), time = measure_algorithm(uniform_cost_search, player, stones)
+    set_value("maze.txt")
+    (algorithm, steps, total_weight, node_generated, path, mem_usage), time = measure_algorithm(greedy_best_first_search, player, stones)
     print("Algorithm:", algorithm)
     print("Steps:", steps)
     print("Total Stone Weight Pushed:", total_weight)
@@ -307,20 +304,4 @@ def main():
     
 if __name__ == "__main__":
     main()
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
