@@ -1,8 +1,8 @@
-from collections import deque
 import heapq
 from queue import Queue
 import time
 import psutil
+from collections import deque
 
 WALL = "#"
 FREE_SPACE = " "
@@ -95,7 +95,7 @@ def set_distance():
                 nx, ny = x + dx, y + dy # stone position
                 px, py = nx + dx, ny + dy # player position
                 if (nx, ny) in paths and distances[switch][(nx, ny)] == 1e9:
-                    if (nx, ny) in paths and (px, py) in paths:
+                    if (px, py) in paths:
                         distances[switch][(nx, ny)] = distances[switch][(x, y)] + 1
                         q.put((nx, ny))
           
@@ -128,9 +128,8 @@ def set_valid_move(player, stones):
 def is_win(stones):
     return all(s.point in switches for s in stones)
 
-            
 def heuristic(stones):
-    return sum(min(abs(s.point[0] - sw[0]) + abs(s.point[1] - sw[1]) for sw in switches) for s in stones)
+    return sum(min(distances[switch][s.point] for switch in switches) for s in stones)   
 
 def move(player, stones, direction):
     x, y = player
@@ -151,17 +150,18 @@ def move(player, stones, direction):
     player = (nx, ny)
     return player, stones, is_pushed, is_dead_lock, temp
 
-def uniform_cost_search(cur_player, cur_stones):
+def ucs(cur_player, cur_stones):
     node_generated = 0
     q = []
-    heapq.heappush(q, (0, cur_player, cur_stones, 0, [])) 
+    heapq.heappush(q, (0, cur_player, cur_stones, 0, 0, [])) 
+                      #cost, player, stones, steps, weight, path
     visited = set()
     best_cost = {}
     process = psutil.Process()
     mem_before = process.memory_info().rss
     
     while q:
-        weight, now_player, now_stones, steps, path = heapq.heappop(q)
+        now_cost, now_player, now_stones, steps, weight, path = heapq.heappop(q)
         state_key = (now_player, tuple(s.point for s in now_stones))
                                 # use tuple to store stones so that it can be hashable -> can be used in set and dict
         if is_win(now_stones):
@@ -177,19 +177,20 @@ def uniform_cost_search(cur_player, cur_stones):
             if is_dead_lock:
                 continue
             
-            new_cost = weight + stone_weight + 1
+            new_cost = now_cost + stone_weight + (1 if not is_pushed else 0)
+                                # stone weight = 0 if no stone is pushed
             new_state_key = (new_player, tuple(s.point for s in new_stones))
-
-            if new_state_key not in visited and new_state_key not in best_cost or new_cost < best_cost.get(new_state_key, float("inf")):
+            
+            if new_state_key not in visited and new_state_key not in best_cost \
+                    or new_cost < best_cost.get(new_state_key, float("inf")):
                 best_cost[new_state_key] = new_cost
-                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
-                
+                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)))    
             node_generated += 1
 
     print("No solution found.")
     return "UCS", 0, 0, 0, 0, mem_usage
 
-def greedy_best_first_search(cur_player, cur_stones):
+def gbfs(cur_player, cur_stones):
     node_generated = 0
     q = []
     heapq.heappush(q, (heuristic(cur_stones), cur_player, cur_stones, 0, 0, []))  
@@ -199,46 +200,47 @@ def greedy_best_first_search(cur_player, cur_stones):
     mem_before = process.memory_info().rss
     
     while q:
-        _, now_player, now_stones, steps, total_weight, path = heapq.heappop(q)
+        _, now_player, now_stones, steps, weight, path = heapq.heappop(q)
         state_key = (now_player, tuple(s.point for s in now_stones))
         
         if is_win(now_stones):
             mem_after = process.memory_info().rss
             mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
-            return "GBFS", steps, total_weight, node_generated, path, mem_usage
+            return "GBFS", steps, weight, node_generated, path, mem_usage
 
         visited.add(state_key)
 
         moves = set_valid_move(now_player, now_stones)
         for m in moves:
-            new_player, new_stones, is_pushed, is_dead_lock, weight = move(now_player, now_stones, m)
+            new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
             
             if is_dead_lock:
                 continue
             
             new_state_key = (new_player, tuple(s.point for s in new_stones))
-            new_cost = heuristic(new_stones)
-            new_total_weight = total_weight + weight + 1 
-            
-            if new_state_key not in visited and new_state_key not in best_cost or new_cost < best_cost.get(new_state_key, float("inf")):
+            new_cost = heuristic(new_stones) + stone_weight
+                       # the heuristic highlights the importance of the stone weight
+            if new_state_key not in visited and new_state_key not in best_cost\
+                    or new_cost < best_cost.get(new_state_key, float("inf")):    
                 best_cost[new_state_key] = new_cost
-                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, new_total_weight, path + convert_path(m, is_pushed)))
+                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)))
+                
             node_generated += 1
 
     return "GBFS", 0, 0, 0, [], 0
 
-def A_star(cur_player, cur_stones):
+def Astar(cur_player, cur_stones):
     node_generated = 0
     q = []
-    heapq.heappush(q, (0, 0, cur_player, cur_stones, 0, [])) 
-                      # fn, weight (g(n)), player, stones, steps, path
+    heapq.heappush(q, (0, cur_player, cur_stones, 0, 0, [])) 
+                      # fn, player, stones, steps, weight, path
     visited = set()
     best_cost = {}
     process = psutil.Process()
     mem_before = process.memory_info().rss
 
     while q:
-        _, weight, now_player, now_stones, steps, path = heapq.heappop(q)
+        now_cost, now_player, now_stones, steps, weight, path = heapq.heappop(q)
         state_key = (now_player, tuple(s.point for s in now_stones))
                                 # use tuple to store stones so that it can be hashable -> can be used in set and dict
         if is_win(now_stones):
@@ -254,15 +256,14 @@ def A_star(cur_player, cur_stones):
             if is_dead_lock:
                 continue
             
-            new_cost = weight + stone_weight + 1 
-            hn = heuristic(new_stones)
-            fn = new_cost + hn
+            fn = now_cost + heuristic(new_stones) + stone_weight + (1 if not is_pushed else 0)
+                                                    #stone weight = 0 if no stone is pushed 
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
-            if new_state_key not in visited and new_state_key not in best_cost or fn < best_cost.get(new_state_key, float("inf")):
+            if new_state_key not in visited and new_state_key not in best_cost \
+                    or fn < best_cost.get(new_state_key, float("inf")):    
                 best_cost[new_state_key] = fn
-                heapq.heappush(q, (fn, new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)))
-
+                heapq.heappush(q, (fn, new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)))
 
             node_generated += 1
             
@@ -272,28 +273,33 @@ def A_star(cur_player, cur_stones):
 
 def bfs(cur_player, cur_stones):
     node_generated = 0
-    q = deque([(0,cur_player, cur_stones, 0, [])])
+    q = deque([(cur_player, cur_stones, 0, 0, [])])
     visited = set()
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
 
     while q:
-        weight, now_player, now_stones, steps, path = q.popleft()
+        now_player, now_stones, steps, weight, path = q.popleft()
         state_key = (now_player, tuple(s.point for s in now_stones))
                                 # use tuple to store stones so that it can be hashable -> can be used in set and dict
         visited.add(state_key)
         moves = set_valid_move(now_player, now_stones)
+        # node_generated += 1
+        
         for m in moves:
             new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
 
             if is_dead_lock:
                 continue
             
-            new_cost = weight + stone_weight + 1
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
             if new_state_key not in visited:
                 if is_win(new_stones):
-                    return "BFS", steps, weight, node_generated, path
-                q.append ([new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)])
+                    mem_after = process.memory_info().rss
+                    mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+                    return "BFS", steps + 1, weight + stone_weight, node_generated, path + convert_path(m, is_pushed), mem_usage
+                q.append ([new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)])
             node_generated += 1
 
     print("No solution found.")
@@ -301,11 +307,13 @@ def bfs(cur_player, cur_stones):
 
 def dfs(cur_player, cur_stones):
     node_generated = 0
-    q = deque([(0,cur_player, cur_stones, 0, [])])
+    q = deque([(cur_player, cur_stones, 0, 0, [])])
     visited = set()
-
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+    
     while q:
-        weight, now_player, now_stones, steps, path = q.pop()
+        now_player, now_stones, steps, weight, path = q.pop()
         state_key = (now_player, tuple(s.point for s in now_stones))
                                 # use tuple to store stones so that it can be hashable -> can be used in set and dict
         visited.add(state_key)
@@ -316,17 +324,19 @@ def dfs(cur_player, cur_stones):
             if is_dead_lock:
                 continue
             
-            new_cost = weight + stone_weight + 1
             new_state_key = (new_player, tuple(s.point for s in new_stones))
 
             if new_state_key not in visited:
                 if is_win(new_stones):
-                    return "BFS", steps, weight, node_generated, path
-                q.append ([new_cost, new_player, new_stones, steps + 1, path + convert_path(m, is_pushed)])
+                    mem_after = process.memory_info().rss
+                    mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+                    return "DFS", steps + 1, weight + stone_weight, node_generated, path + convert_path(m, is_pushed), mem_usage
+                q.append ([new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)])
             node_generated += 1
 
     print("No solution found.")
-    return "BFS", 0, 0, 0, 0
+    return "DFS", 0, 0, 0, 0
+
 
 def convert_path(direction, is_pushed):
     if direction == UP:
@@ -351,11 +361,23 @@ def measure_algorithm(algorithm, player, stones):
 
 def main():
     global player, stones
-    set_value("maze.txt")
-    (algorithm, steps, total_weight, node_generated, path, mem_usage), time = measure_algorithm(greedy_best_first_search, player, stones)
+    # for i in range (1,11):
+    #     print ("Level " + str(i))
+    #     set_value("Level/" + str(i) + ".txt")
+    #     (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(ucs, player, stones)
+    #     print("Algorithm:", algorithm)
+    #     print("Steps:", steps)
+    #     print("Total Stone Weight Pushed:", weight)
+    #     print("Node generated:", node_generated)
+    #     print(f"Time: {time:.2f} secs")
+    #     print(f"Memory usage: {mem_usage:.2f} MB")
+    #     print("Path:", "".join(path))
+    #     print("")
+    set_value("Level/11.txt")
+    (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(bfs, player, stones)
     print("Algorithm:", algorithm)
     print("Steps:", steps)
-    print("Total Stone Weight Pushed:", total_weight)
+    print("Total Stone Weight Pushed:", weight)
     print("Node generated:", node_generated)
     print(f"Time: {time:.2f} secs")
     print(f"Memory usage: {mem_usage:.2f} MB")
