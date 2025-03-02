@@ -13,7 +13,8 @@ STONE_PLACED_ON_SWITCH = "*"
 
 # Kích thước ô vuông
 TILE_SIZE = 60
-
+HEIGHT_BOARD = 650
+WIDTH_BOARD = 800
 # Màu sắc
 COLORS = {
     "#": (100, 100, 100),  # Wall - xám
@@ -60,12 +61,11 @@ def find_obj_pos(matrix, height, width):
 
 def draw_board(screen, matrix, height, width):
     screen.fill((255, 255, 255))
-    draw_title(screen, TILE_SIZE)
     draw_level(screen)
     button_rects = draw_buttons(screen)
     for i in range(height):
         for j in range(width):
-            offset_y = (700 - height * TILE_SIZE) // 2  # Canh giữa theo chiều dọc
+            offset_y = (WIDTH_BOARD - height * TILE_SIZE) // 2  # Canh giữa theo chiều dọc
             rect = pygame.Rect(0 + j * TILE_SIZE, offset_y + i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, COLORS.get(matrix[i, j], (255, 255, 255)), rect)
             pygame.draw.rect(screen, (0, 0, 0), rect, 1)
@@ -109,7 +109,7 @@ def animate_solution(screen, matrix, height, width, solution):
                 new_stone_pos = (new_pos[0] + dx, new_pos[1] + dy)
                 if 0 <= new_stone_pos[0] < height and 0 <= new_stone_pos[1] < width:
                     
-                    # ⚠️ Sửa lỗi: Xử lý đúng switch sau khi đẩy đá đi
+                    #  Sửa lỗi: Xử lý đúng switch sau khi đẩy đá đi
                     if matrix[new_pos[0], new_pos[1]] == STONE_PLACED_ON_SWITCH:
                         matrix[new_pos[0], new_pos[1]] = SWITCH  # Chuyển lại thành switch (.)
 
@@ -128,7 +128,7 @@ def animate_solution(screen, matrix, height, width, solution):
             matrix[new_pos[0], new_pos[1]] = ARES
             ares = new_pos
 
-            # ⚠️ Sửa lỗi: Nếu vị trí cũ của Ares là switch (`.`), khôi phục lại
+            # Sửa lỗi: Nếu vị trí cũ của Ares là switch (`.`), khôi phục lại
             if prev_ares_pos in switches:
                 matrix[prev_ares_pos[0], prev_ares_pos[1]] = SWITCH
             else:
@@ -149,7 +149,7 @@ def draw_buttons(screen):
     buttons = ["BFS", "DFS", "A*", "UCS", "GBFS", "Reset", "Pause"]
     button_rects = []
     for i, text in enumerate(buttons):
-        rect = pygame.Rect(10 + i * 88, 10, 80, 40)
+        rect = pygame.Rect(10 + i * 88, 10, 80, 40) 
         pygame.draw.rect(screen, (4, 178, 217), rect)
         pygame.draw.rect(screen, (0, 0, 0), rect, 2)
         label = font.render(text, True, (0, 0, 0))
@@ -161,7 +161,7 @@ def draw_buttons(screen):
 
 
 def draw_title(screen, tile_size):
-    font = pygame.font.Font(None, tile_size // 2)  # Giảm kích thước chữ để cân đối hơn
+    font = pygame.font.Font(None, tile_size)  # Giảm kích thước chữ để cân đối hơn
     title = "SOKOBAN"
     start_x = 10  # Điểm bắt đầu của chữ
     start_y = 50  # Điều chỉnh để tiêu đề không quá cao hoặc thấp
@@ -183,10 +183,8 @@ def draw_level(screen):
     spacing = 10
 
     for i, text in enumerate(buttons):
-        col = i // 5  # Cột (0 hoặc 1)
-        row = i % 5   # Hàng (0 đến 4)
-        x = start_x + col * (button_width + spacing) 
-        y = start_y + row * (button_height + spacing)
+        x = start_x 
+        y = start_y + i * (button_height + spacing)
 
         rect = pygame.Rect(x, y, button_width, button_height)
         pygame.draw.rect(screen, (0, 128, 255), rect)  # Màu xanh dương
@@ -201,17 +199,16 @@ def draw_level(screen):
     return button_rects
 
 
-
 def main():
     filename = "input.txt"
     matrix, height, width = read_map(filename)
     if matrix is None:
         return
     
-    solution = "rrdllluuRlllldrdldRRRRllllurulurrrrdrrdlDrdLrullllllurulurrrrdrruLrdllldrrrdllllllurulurrrurDrrdlLrrdllldlllurulurrrDrrrdlldllllurulurrrdDrrrdllLrrrulllurrrulllllldrdldrRRRllllurulurrrrrrdllldrrrddlUruLrdllllllurulurrrrrrdllldRldrrruLrdllldRlurrrulLrrdllllllurulurrrrrrdlllDrrrdllLrrrdLrulllLrrrrulllurrrulllllldrdldRRRdRluR"
+    solution = "RurrddddlDRuuuuLLLrdRDrddlLdllURlU"
     
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    screen = pygame.display.set_mode((WIDTH_BOARD, HEIGHT_BOARD))
     pygame.display.set_caption("Sokoban Solver")
     reset_flat = False
     running = True
@@ -230,15 +227,16 @@ def main():
                 reset_flat = animate_solution(screen, matrix, height, width, solution)
                 state = 'menu'  
             if selected_algorithm == "BFS":
-                draw_board(screen, matrix, height, width)
+                reset_flat = animate_solution(screen, matrix, height, width, solution)
                 state = 'menu'
             if selected_algorithm == "A*":
-                draw_board(screen, matrix, height, width)
+                reset_flat = animate_solution(screen, matrix, height, width, solution)
                 state = 'menu'
             if selected_algorithm == "UCS":
-                draw_board(screen, matrix, height, width)
+                reset_flat = animate_solution(screen, matrix, height, width, solution)
                 state = 'menu'
             if selected_algorithm == "GBFS":
+                reset_flat = animate_solution(screen, matrix, height, width, solution)
                 state = 'menu'
             if selected_algorithm == "Reset":
                 reset_flat = True
