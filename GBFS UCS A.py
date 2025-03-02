@@ -53,11 +53,15 @@ def set_value(file):
     with open(file, "r") as f:
         stones_weight = list(map(int, f.readline().strip().split()))
         for line in f:
-            maze.append(list(line.strip()))
+            maze.append(list(line.rstrip(" ")))
+            
+        max_width = max(len(row) for row in maze)
+        maze = [row + [" "] * (max_width - len(row)) for row in maze]
+        
     cnt = 0  
     for i in range(len(maze)): 
         for j in range(len(maze[0])):
-            if maze[i][j] != WALL:
+            if maze[i][j] != WALL or maze[i][j] == " ":
                 paths.append((i, j))
             if maze[i][j] == ARES:
                 player = (i, j)
@@ -74,7 +78,7 @@ def set_value(file):
             elif maze[i][j] == SWITCH:
                 switches.add((i, j))
             elif maze[i][j] == WALL:
-                walls.add((i, j))    
+                walls.add((i, j))
     set_distance()
 
 def set_distance():
@@ -292,8 +296,8 @@ def measure_algorithm(algorithm, player, stones):
 
 def main():
     global player, stones
-    set_value("maze.txt")
-    (algorithm, steps, total_weight, node_generated, path, mem_usage), time = measure_algorithm(greedy_best_first_search, player, stones)
+    set_value("input.txt")
+    (algorithm, steps, total_weight, node_generated, path, mem_usage), time = measure_algorithm(uniform_cost_search, player, stones)
     print("Algorithm:", algorithm)
     print("Steps:", steps)
     print("Total Stone Weight Pushed:", total_weight)
