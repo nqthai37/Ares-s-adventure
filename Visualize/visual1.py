@@ -85,11 +85,15 @@ def set_value(file):
     with open(file, "r") as f:
         stones_weight = list(map(int, f.readline().strip().split()))
         for line in f:
-            matrix.append(list(line.strip()))
+            matrix.append(list(line.rstrip(" ")))
+            
+        max_width = max(len(row) for row in matrix)
+        matrix = [row + [" "] * (max_width - len(row)) for row in matrix]
+        
     cnt = 0  
     for i in range(len(matrix)): 
         for j in range(len(matrix[i])):
-            if matrix[i][j] != WALL:
+            if matrix[i][j] != WALL or matrix[i][j] == " ":
                 paths.append((i, j))
             if matrix[i][j] == ARES:
                 player = (i, j)
@@ -106,7 +110,7 @@ def set_value(file):
             elif matrix[i][j] == SWITCH:
                 switches.add((i, j))
             elif matrix[i][j] == WALL:
-                walls.add((i, j))    
+                walls.add((i, j))
     set_distance()
 
 
@@ -530,7 +534,7 @@ def draw_level(screen):
 
 def main():
     global player, stones
-    filename = "Ares-s-adventure/input.txt"
+    filename = "input.txt"
     set_value(filename)
     
     (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
