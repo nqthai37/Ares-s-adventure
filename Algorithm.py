@@ -1,68 +1,400 @@
+import heapq
+from queue import Queue
+import time
+import psutil
+from collections import deque
 
 WALL = "#"
 FREE_SPACE = " "
 STONE = "$"
 ARES = "@"
 SWITCH = "."
-STONE_PLACED_ON_SWITCH = "*"
+STONE_ON_SWITCH = "*"
 ARES_ON_SWITCH = "+"
 
+UP = (-1, 0)
+DOWN = (1, 0)
+LEFT = (0, -1)
+RIGHT = (0, 1)
 
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-u = (0,1)
-d = (0, -1)
-l = (1, 0)
-r = (-1, 0)
-directions = [ u, d, l, r]
+direction = [UP, DOWN, LEFT, RIGHT]
 
+maze = []
+stones_weight = []
+player = None
+stones = []
+switches = set()
+paths = []
+walls = set()
+distances = dict()
+dead_locks = set()
 
 class Stone:
-    def __init__(self, point , weight):
+    def __init__(self, point, weight):
         self.point = point
         self.weight = weight
 
-
-class Algorithm:
-    def __init__(self, matrix,path, agent, stones, switches):
-        self.matrix = matrix
-        self.agent = agent
-        self.path = path
-        self.stones = stones
-        self.switches = switches
-
-    def readInputFile(self):
-        with open('TestCase/input-1.txt') as f:
-            lines = f.readlines()
-        return lines
+    def __lt__(self, other):
+        return self.weight < other.weight
     
-    def buildMatrix(self, lines):
-        stone = []
-        switch = []
-        for i in range(len(lines[0].split())):
-            stone[i] = Stone(None, int(lines[0].split()[i]))
-        matrix = []
-        for i in range(1, len(lines)):
-            matrix.append(lines[i].split())
-            for j in range(len(lines[i].split())):
-                if lines[i].split()[j] == '@':
-                    self.agent = Point(i, j)
-                if lines[i].split()[j] == '.':
-                    switch.append(Point(i, j))
-                if lines[i].split()[j] == '$':
-                    stone[j].point = Point(i, j)
-        self.matrix = matrix
-        self.stone = stone
-        self.switch = switch
+def remove_stone(stone_list, point):
+    for s in stone_list:
+        if s.point == point:
+            stone_list.remove(s)
+            break
 
-    def isValid(self, point, visited):
-        if point.x < 0 or point.y < 0 or point.x >= len(self.matrix) or point.y >= len(self.matrix[0]):
-            return False
-        if visited[point.x][point.y] == True:
-            return False
-        if self.matrix[point.x][point.y] == WALL:
-            return False
-        return True
+def find_stone(stone_list, point):
+    for s in stone_list:
+        if s.point == point:
+            return s
+    return None
+                    
+def set_value(file):
+    global maze, stones_weight, player, stones, switches, paths, walls, distances, dead_locks
+    
+    # Initialize data structures
+    maze = []
+    stones_weight = []
+    player = None
+    stones = []
+    switches = set()
+    paths = set()
+    walls = set()
+    distances = {}
+    dead_locks = set()
+    
+    # Read the maze file
+    with open(file, "r") as f:
+        stones_weight = list(map(int, f.readline().strip().split()))
+        maze = [list(line.strip()) for line in f]
+    
+    # Process the maze
+    cnt = 0
+    for i, row in enumerate(maze):
+        for j, cell in enumerate(row):
+            if cell != WALL:
+                paths.add((i, j))
+            if cell == ARES or cell == ARES_ON_SWITCH:
+                player = (i, j)
+                if cell == ARES_ON_SWITCH:
+                    switches.add((i, j))
+            elif cell == STONE or cell == STONE_ON_SWITCH:
+                stones.append(Stone((i, j), stones_weight[cnt]))
+                cnt += 1
+                if cell == STONE_ON_SWITCH:
+                    switches.add((i, j))
+            elif cell == SWITCH:
+                switches.add((i, j))
+            elif cell == WALL:
+                walls.add((i, j))
+    
+    # Calculate distances and deadlocks
+    set_distance()
+
+def set_distance():
+    global distances, switches, dead_locks, paths
+    
+    # Initialize distances
+    for switch in switches:
+        distances[switch] = {path: float('inf') for path in paths}
+    
+    # BFS to calculate distances from each switch
+    q = deque()
+    for switch in switches:
+        distances[switch][switch] = 0
+        q.append(switch)
+        while q:
+            x, y = q.popleft()
+            for dx, dy in direction:
+                nx, ny = x + dx, y + dy  # stone position
+                px, py = nx + dx, ny + dy  # player position
+                if (nx, ny) in paths and distances[switch][(nx, ny)] == float('inf'):
+                    if (px, py) in paths:
+                        distances[switch][(nx, ny)] = distances[switch][(x, y)] + 1
+                        q.append((nx, ny))
+    
+    # Identify deadlocks
+    for path in paths:
+        if all(distances[switch][path] == float('inf') for switch in switches):
+            dead_locks.add(path)
+
+def set_valid_move(player, stones):
+    x, y = player
+    valid_moves = []
+    stone_positions = {s.point for s in stones}
+
+    for dx, dy in direction:
+        nx, ny = x + dx, y + dy
+        if (nx, ny) in walls:
+            continue
+        if (nx, ny) in stone_positions:
+            px, py = nx + dx, ny + dy
+            if (px, py) not in walls and (px, py) not in stone_positions:
+                valid_moves.append((dx, dy))
+        else:
+            valid_moves.append((dx, dy))
+    return valid_moves
+def is_win(stones):
+    return all(s.point in switches for s in stones)
+
+def heuristic(stones):
+    return sum(min(distances[switch][s.point] for switch in switches) for s in stones)   
+
+def move(player, stones, direction):
+    x, y = player
+    dx, dy = direction
+    nx, ny = x + dx, y + dy
+    is_pushed = False
+    is_dead_lock = False
+    stones = set(stones)
+    temp = 0 # weight of stone
+    if find_stone(stones, (nx, ny)):
+        is_pushed = True
+        temp = find_stone(stones, (nx, ny)).weight
+        remove_stone(stones, (nx, ny))
+        stones.add(Stone((nx + dx, ny + dy), temp))
+        if (nx + dx, ny + dy) in dead_locks:
+            is_dead_lock = True
+    stones = tuple(stones)
+    player = (nx, ny)
+    return player, stones, is_pushed, is_dead_lock, temp
+
+def ucs(cur_player, cur_stones):
+    node_generated = 0
+    q = []
+    heapq.heappush(q, (0, cur_player, cur_stones, 0, 0, [])) 
+                      #cost, player, stones, steps, weight, path
+    visited = set()
+    best_cost = {}
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+    
+    while q:
+        now_cost, now_player, now_stones, steps, weight, path = heapq.heappop(q)
+        state_key = (now_player, tuple(s.point for s in now_stones))
+                                # use tuple to store stones so that it can be hashable -> can be used in set and dict
+        if is_win(now_stones):
+            mem_after = process.memory_info().rss
+            mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+            return "UCS", steps, weight, node_generated, path, mem_usage
+
+        visited.add(state_key)
+        moves = set_valid_move(now_player, now_stones)
+        for m in moves:
+            new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
+
+            if is_dead_lock:
+                continue
+            
+            new_cost = now_cost + stone_weight + (1 if not is_pushed else 0)
+                                # stone weight = 0 if no stone is pushed
+            new_state_key = (new_player, tuple(s.point for s in new_stones))
+            
+            if new_state_key not in visited and new_state_key not in best_cost \
+                    or new_cost < best_cost.get(new_state_key, float("inf")):
+                best_cost[new_state_key] = new_cost
+                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)))    
+            node_generated += 1
+
+    print("No solution found.")
+    return "UCS", 0, 0, 0, 0, mem_usage
+
+def gbfs(cur_player, cur_stones):
+    node_generated = 0
+    q = []
+    heapq.heappush(q, (heuristic(cur_stones), cur_player, cur_stones, 0, 0, []))  
+    visited = set()
+    best_cost = {}
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+    
+    while q:
+        _, now_player, now_stones, steps, weight, path = heapq.heappop(q)
+        state_key = (now_player, tuple(s.point for s in now_stones))
+        
+        if is_win(now_stones):
+            mem_after = process.memory_info().rss
+            mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+            return "GBFS", steps, weight, node_generated, path, mem_usage
+
+        visited.add(state_key)
+
+        moves = set_valid_move(now_player, now_stones)
+        for m in moves:
+            new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
+            
+            if is_dead_lock:
+                continue
+            
+            new_state_key = (new_player, tuple(s.point for s in new_stones))
+            new_cost = heuristic(new_stones) + stone_weight
+                       # the heuristic highlights the importance of the stone weight
+            if new_state_key not in visited and new_state_key not in best_cost\
+                    or new_cost < best_cost.get(new_state_key, float("inf")):    
+                best_cost[new_state_key] = new_cost
+                heapq.heappush(q, (new_cost, new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)))
+                
+            node_generated += 1
+
+    return "GBFS", 0, 0, 0, [], 0
+
+def Astar(cur_player, cur_stones):
+    node_generated = 0
+    q = []
+    heapq.heappush(q, (0, cur_player, cur_stones, 0, 0, [])) 
+                      # fn, player, stones, steps, weight, path
+    visited = set()
+    best_cost = {}
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+
+    while q:
+        now_cost, now_player, now_stones, steps, weight, path = heapq.heappop(q)
+        state_key = (now_player, tuple(s.point for s in now_stones))
+                                # use tuple to store stones so that it can be hashable -> can be used in set and dict
+        if is_win(now_stones):
+            mem_after = process.memory_info().rss
+            mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+            return "A*", steps, weight, node_generated, path, mem_usage
+
+        visited.add(state_key)
+        moves = set_valid_move(now_player, now_stones)
+        for m in moves:
+            new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
+
+            if is_dead_lock:
+                continue
+            
+            fn = now_cost + heuristic(new_stones) + stone_weight + (1 if not is_pushed else 0)
+                                                    #stone weight = 0 if no stone is pushed 
+            new_state_key = (new_player, tuple(s.point for s in new_stones))
+
+            if new_state_key not in visited and new_state_key not in best_cost \
+                    or fn < best_cost.get(new_state_key, float("inf")):    
+                best_cost[new_state_key] = fn
+                heapq.heappush(q, (fn, new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)))
+
+            node_generated += 1
+            
+
+    print("No solution found.")
+    return "A*", 0, 0, 0, 0, 0
+
+def bfs(cur_player, cur_stones):
+    node_generated = 0
+    q = deque([(cur_player, cur_stones, 0, 0, [])])
+    visited = set()
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+
+    while q:
+        now_player, now_stones, steps, weight, path = q.popleft()
+        state_key = (now_player, tuple(s.point for s in now_stones))
+                                # use tuple to store stones so that it can be hashable -> can be used in set and dict
+        visited.add(state_key)
+        moves = set_valid_move(now_player, now_stones)
+        # node_generated += 1
+        
+        for m in moves:
+            new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
+
+            if is_dead_lock:
+                continue
+            
+            new_state_key = (new_player, tuple(s.point for s in new_stones))
+
+            if new_state_key not in visited:
+                if is_win(new_stones):
+                    mem_after = process.memory_info().rss
+                    mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+                    return "BFS", steps + 1, weight + stone_weight, node_generated, path + convert_path(m, is_pushed), mem_usage
+                q.append ([new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)])
+            node_generated += 1
+
+    print("No solution found.")
+    return "BFS", 0, 0, 0, 0, 0
+
+def dfs(cur_player, cur_stones):
+    node_generated = 0
+    q = deque([(cur_player, cur_stones, 0, 0, [])])
+    visited = set()
+    process = psutil.Process()
+    mem_before = process.memory_info().rss
+    
+    while q:
+        now_player, now_stones, steps, weight, path = q.pop()
+        state_key = (now_player, tuple(s.point for s in now_stones))
+                                # use tuple to store stones so that it can be hashable -> can be used in set and dict
+        visited.add(state_key)
+        moves = set_valid_move(now_player, now_stones)
+        for m in moves:
+            new_player, new_stones, is_pushed, is_dead_lock, stone_weight = move(now_player, now_stones, m)
+
+            if is_dead_lock:
+                continue
+            
+            new_state_key = (new_player, tuple(s.point for s in new_stones))
+
+            if new_state_key not in visited:
+                if is_win(new_stones):
+                    mem_after = process.memory_info().rss
+                    mem_usage = max(0, (mem_after - mem_before) / (1024 * 1024))
+                    return "DFS", steps + 1, weight + stone_weight, node_generated, path + convert_path(m, is_pushed), mem_usage
+                q.append ([new_player, new_stones, steps + 1, weight + stone_weight, path + convert_path(m, is_pushed)])
+            node_generated += 1
+
+    print("No solution found.")
+    return "DFS", 0, 0, 0, "", 0
+
+
+def convert_path(direction, is_pushed):
+    if direction == UP:
+        return ['u'] if not is_pushed else ['U']
+    if direction == DOWN:
+        return ['d'] if not is_pushed else ['D']
+    if direction == LEFT:
+        return ['l'] if not is_pushed else ['L']
+    if direction == RIGHT:
+        return ['r'] if not is_pushed else ['R']
+
+def measure_algorithm(algorithm, player, stones):
+    start_time = time.time()
+
+    result = algorithm(player, stones ) 
+
+    end_time = time.time() 
+    elapsed_time = end_time - start_time
+    
+    
+    return result, elapsed_time
+
+def main():
+    global player, stones
+    # for i in range (1,11):
+    #     print ("Level " + str(i))
+    #     set_value("Level/" + str(i) + ".txt")
+    #     (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(ucs, player, stones)
+    #     print("Algorithm:", algorithm)
+    #     print("Steps:", steps)
+    #     print("Total Stone Weight Pushed:", weight)
+    #     print("Node generated:", node_generated)
+    #     print(f"Time: {time:.2f} secs")
+    #     print(f"Memory usage: {mem_usage:.2f} MB")
+    #     print("Path:", "".join(path))
+    #     print("")\
+    for i in range (1,6):
+        print ("Level " + str(i))
+        set_value("Level/" + str(i) + ".txt")
+        
+        (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
+        print("Algorithm:", algorithm)
+        print("Steps:", steps)
+        print("Total Stone Weight Pushed:", weight)
+        print("Node generated:", node_generated)
+        print(f"Time: {time:.2f} secs")
+        print(f"Memory usage: {mem_usage:.2f} MB")
+        print("Path:", "".join(path))
+        
+if __name__ == "__main__":
+    main()
     
