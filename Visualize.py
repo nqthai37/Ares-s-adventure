@@ -415,7 +415,7 @@ def draw_board(screen, title):
                     text_rect = text.get_rect(center=rect.center)
                     screen.blit(text, text_rect)
 
-    pygame.display.flip()
+    # pygame.display.flip()
     return level_rects, button_rects
 
 def animate_solution(screen, solution, title):
