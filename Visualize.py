@@ -389,9 +389,10 @@ def measure_algorithm(algorithm, player, stones):
     
     return result, elapsed_time
 
-def draw_board(screen):
+def draw_board(screen, title):
     screen.fill((255, 255, 255))
-    level_rects = draw_level(screen)
+    draw_title(screen, 60, title)
+    draw_level(screen)
     button_rects = draw_buttons(screen)
     height = len(matrix)
     for i in range(len(matrix)):
@@ -401,9 +402,9 @@ def draw_board(screen):
             pygame.draw.rect(screen, COLORS.get(matrix[i][j], (255, 255, 255)), rect)
             pygame.draw.rect(screen, (0, 0, 0), rect, 1)
     pygame.display.flip()
-    return level_rects, button_rects
+    return button_rects
 
-def animate_solution(screen, solution):
+def animate_solution(screen, solution, title):
     global player
     moves = {'u': (-1, 0), 'd': (1, 0), 'l': (0, -1), 'r': (0, 1)}
     pause = False  # Trạng thái Pause
@@ -465,7 +466,7 @@ def animate_solution(screen, solution):
             else:
                 matrix[prev_player_pos[0]][prev_player_pos[1]] = FREE_SPACE
 
-        draw_board(screen)
+        draw_board(screen, title)
         pygame.display.flip()
         time.sleep(0.1)  
 
@@ -489,9 +490,9 @@ def draw_buttons(screen):
         button_rects.append((rect, text))
     return button_rects
 
-def draw_title(screen, tile_size):
+def draw_title(screen, tile_size, in_title):
     font = pygame.font.Font(None, tile_size)  # Giảm kích thước chữ để cân đối hơn
-    title = "Ares' Adventure"
+    title = in_title
     start_x = 10  # Điểm bắt đầu của chữ
     start_y = 50  # Điều chỉnh để tiêu đề không quá cao hoặc thấp
 
@@ -542,32 +543,31 @@ def main():
     while running:
         screen.fill((255, 255, 255))
         button_rects = draw_buttons(screen)
-        draw_board(screen)
-        
+        draw_board(screen, "")
         if state == 'menu':
             button_rects = draw_buttons(screen) 
             level_rect = draw_level(screen)
         elif state == 'running':
-            draw_board(screen)
+            draw_board(screen, "")
             if selected_algorithm == "DFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(dfs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path, "DFS")
                 state = 'menu'  
             if selected_algorithm == "BFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(bfs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path, "BFS")
                 state = 'menu'
             if selected_algorithm == "A*":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path, "A*")
                 state = 'menu'
             if selected_algorithm == "UCS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(ucs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path, "UCS")
                 state = 'menu'
             if selected_algorithm == "GBFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(gbfs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path, "GBFS")
                 state = 'menu'
             if selected_algorithm == "Reset":
                 reset_flat = True
@@ -591,7 +591,7 @@ def main():
                 for rect, level in level_rect:
                     if rect.collidepoint(x, y):
                         reset_value()
-                        filename = "Level/" + level + ".txt"
+                        filename = "Ares-s-adventure/Level/" + level + ".txt"
                         set_value(filename)
                         check = 1
                 for rect, algo in button_rects:
