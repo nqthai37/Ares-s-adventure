@@ -32,7 +32,8 @@ paths = []
 walls = set()
 distances = dict()
 dead_locks = set()
-
+weight =0
+steps = 0
 class Stone:
     def __init__(self, point, weight):
         self.point = point
@@ -54,9 +55,9 @@ def find_stone(stone_list, point):
     return None
 
 # Kích thước ô vuông
-TILE_SIZE = 60
-HEIGHT_BOARD = 650
-WIDTH_BOARD = 800
+TILE_SIZE = 50
+HEIGHT_BOARD = 750
+WIDTH_BOARD = 900
 # Màu sắc
 COLORS = {
     "#": (100, 100, 100),  # Wall - xám
@@ -68,7 +69,8 @@ COLORS = {
 }
 
 def reset_value():
-    global matrix, stones_weight, player, stones, switches, paths, walls, distances, dead_locks
+    global matrix, stones_weight, player, stones, switches, paths, walls, distances, dead_locks, weight, steps
+
     
     matrix = []
     stones_weight = []
@@ -79,6 +81,8 @@ def reset_value():
     walls = set()
     distances = {}
     dead_locks = set()
+    weight = 0
+    steps = 0
 
 def set_value(file):
     global matrix, stones_weight, player, stones, switches, paths, walls
@@ -389,29 +393,39 @@ def measure_algorithm(algorithm, player, stones):
     
     return result, elapsed_time
 
-def draw_board(screen):
-    screen.fill((255, 255, 255))
+def draw_board(screen, title):
+    screen.fill((200, 200, 200))
+    draw_title(screen, TILE_SIZE, title)
     level_rects = draw_level(screen)
     button_rects = draw_buttons(screen)
     height = len(matrix)
+    font = pygame.font.Font(None, 30)
+
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
-            offset_y = (WIDTH_BOARD - height * TILE_SIZE) // 2  # Canh giữa theo chiều dọc
-            rect = pygame.Rect(0 + j * TILE_SIZE, offset_y + i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            offset_y = (HEIGHT_BOARD - height * TILE_SIZE) // 2  
+            rect = pygame.Rect(j * TILE_SIZE, offset_y + i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, COLORS.get(matrix[i][j], (255, 255, 255)), rect)
             pygame.draw.rect(screen, (0, 0, 0), rect, 1)
+
+            # Hiển thị trọng số của viên đá
+            for stone in stones:
+                if stone.point == (i, j): 
+                    text = font.render(str(stone.weight), True, (255, 255, 255)) 
+                    text_rect = text.get_rect(center=rect.center)
+                    screen.blit(text, text_rect)
+
     pygame.display.flip()
     return level_rects, button_rects
 
-def animate_solution(screen, solution):
-    global player
+def animate_solution(screen, solution, title):
+    global player, weight,steps
     moves = {'u': (-1, 0), 'd': (1, 0), 'l': (0, -1), 'r': (0, 1)}
-    pause = False  # Trạng thái Pause
+    pause = False
     button_rects = draw_buttons(screen)
-
-    index = 0  # Biến đếm để chạy từng bước trong solution
+    # global  weight
+    index = 0
     while index < len(solution):
-        # Xử lý sự kiện trước khi di chuyển
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -421,16 +435,14 @@ def animate_solution(screen, solution):
                 for rect, algo in button_rects:
                     if rect.collidepoint(x, y):
                         if algo == "Pause":
-                            pause = not pause  # Đảo trạng thái Pause
+                            pause = not pause
                         elif algo == "Reset":
                             return True
 
-        # Nếu đang Pause, không chạy animation
         if pause:
             pygame.time.delay(100)
             continue
 
-        # Xử lý di chuyển Ares
         move = solution[index]
         dx, dy = moves[move.lower()]
         new_pos = (player[0] + dx, player[1] + dy)
@@ -440,39 +452,56 @@ def animate_solution(screen, solution):
                 new_stone_pos = (new_pos[0] + dx, new_pos[1] + dy)
                 if 0 <= new_stone_pos[0] < len(matrix) and 0 <= new_stone_pos[1] < len(matrix[0]):
                     
-                    #  Sửa lỗi: Xử lý đúng switch sau khi đẩy đá đi
+                    # Xử lý cập nhật switch
                     if matrix[new_pos[0]][new_pos[1]] == STONE_ON_SWITCH:
-                        matrix[new_pos[0]][new_pos[1]] = SWITCH  # Chuyển lại thành switch (.)
-
+                        matrix[new_pos[0]][new_pos[1]] = SWITCH
                     else:
-                        matrix[new_pos[0]][new_pos[1]] = FREE_SPACE  # Nếu không thì trở lại khoảng trống (' ')
+                        matrix[new_pos[0]][new_pos[1]] = FREE_SPACE
 
                     # Cập nhật vị trí mới của đá
                     if matrix[new_stone_pos[0]][new_stone_pos[1]] == SWITCH:
                         matrix[new_stone_pos[0]][new_stone_pos[1]] = STONE_ON_SWITCH
                     else:
                         matrix[new_stone_pos[0]][new_stone_pos[1]] = STONE
+                    # Cập nhật trọng số của viên đá
+                    for stone in stones:
+                        if stone.point == (new_pos[0], new_pos[1]): 
+                            stone.point = new_stone_pos  
+                            break  
+                    weight += find_stone(stones, new_stone_pos).weight
+                    
 
             # Cập nhật vị trí của Ares
-            prev_player_pos = player  # Lưu vị trí cũ để cập nhật lại màu
-
+            prev_player_pos = player
             matrix[new_pos[0]][new_pos[1]] = ARES
             player = new_pos
 
-            # Sửa lỗi: Nếu vị trí cũ của Ares là switch (`.`), khôi phục lại
             if prev_player_pos in switches:
                 matrix[prev_player_pos[0]][prev_player_pos[1]] = SWITCH
             else:
                 matrix[prev_player_pos[0]][prev_player_pos[1]] = FREE_SPACE
+        steps += 1
+        draw_board(screen, title)
+        draw_steps_and_weight(screen, steps, weight)
 
-        draw_board(screen)
         pygame.display.flip()
-        time.sleep(0.1)  
+        time.sleep(0.2)
 
         index += 1 
 
     print("[pygame] Solution animation completed!")
     return False
+
+def draw_steps_and_weight(screen, steps, weight):
+    text = ["Steps: " + str(steps), "Weight: " + str(weight)]
+    font = pygame.font.Font(None, 36)
+    for i, t in enumerate(text):
+        rect = pygame.Rect(10+i*158, 60, 150, 40)
+        pygame.draw.rect(screen, (255, 255, 255), rect)
+        pygame.draw.rect(screen, (0, 0, 0), rect, 2)
+        text_surface = font.render(t, True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=rect.center)
+        screen.blit(text_surface, text_rect)
 
 
 def draw_buttons(screen):
@@ -481,28 +510,29 @@ def draw_buttons(screen):
     button_rects = []
     for i, text in enumerate(buttons):
         rect = pygame.Rect(10 + i * 88, 10, 80, 40) 
-        pygame.draw.rect(screen, (4, 178, 217), rect)
+        pygame.draw.rect(screen, (4, 178, 217), rect) 
         pygame.draw.rect(screen, (0, 0, 0), rect, 2)
-        label = font.render(text, True, (0, 0, 0))
+        label = font.render(text, True, (255, 255, 255))
         label_rect = label.get_rect(center=rect.center)
         screen.blit(label, label_rect)
         button_rects.append((rect, text))
     return button_rects
 
-def draw_title(screen, tile_size):
-    font = pygame.font.Font(None, tile_size)  # Giảm kích thước chữ để cân đối hơn
-    title = "Ares' Adventure"
-    start_x = 10  # Điểm bắt đầu của chữ
-    start_y = 50  # Điều chỉnh để tiêu đề không quá cao hoặc thấp
+def draw_title(screen, tile_size, in_title):
+    font = pygame.font.SysFont(None, tile_size)  
+    title = in_title
+    total_width = len(title) * (tile_size // 2)  
+    start_x = WIDTH_BOARD - total_width - 50  # Căn chữ lề phải
+    start_y = 50  
 
     for i, char in enumerate(title):
-        title_surface = font.render(char, True, (0, 0, 0)) 
-        title_rect = title_surface.get_rect(topleft=(start_x + i * (tile_size // 2), start_y)) 
+        title_surface = font.render(char, True, (0, 0, 0))  
+        title_rect = title_surface.get_rect(topleft=(start_x + i * (tile_size * 0.5), start_y)) 
         screen.blit(title_surface, title_rect)
 
 def draw_level(screen):
     font = pygame.font.Font(None, 36)
-    buttons = [f"Level{i+1}" for i in range(10)]  # Tạo danh sách 10 level
+    buttons = [f"Level{i+1}" for i in range(10)] 
     button_rects = []
 
     screen_width = screen.get_width()
@@ -516,10 +546,10 @@ def draw_level(screen):
         y = start_y + i * (button_height + spacing)
 
         rect = pygame.Rect(x, y, button_width, button_height)
-        pygame.draw.rect(screen, (0, 128, 255), rect)  # Màu xanh dương
-        pygame.draw.rect(screen, (0, 0, 0), rect, 2)  # Viền đen
+        pygame.draw.rect(screen, (4, 178, 217), rect)  
+        pygame.draw.rect(screen, (0, 0, 0), rect, 2) 
 
-        label = font.render(text, True, (255, 255, 255))
+        label = font.render(text, True, (255, 255, 255)) 
         label_rect = label.get_rect(center=rect.center)
         screen.blit(label, label_rect)
 
@@ -529,7 +559,7 @@ def draw_level(screen):
 
 
 def main():
-    global player, stones
+    global player, stones, weight
     
     pygame.init()
     screen = pygame.display.set_mode((WIDTH_BOARD, HEIGHT_BOARD))
@@ -542,32 +572,33 @@ def main():
     while running:
         screen.fill((255, 255, 255))
         button_rects = draw_buttons(screen)
-        draw_board(screen)
+        draw_board(screen,"")
         
         if state == 'menu':
             button_rects = draw_buttons(screen) 
             level_rect = draw_level(screen)
+
         elif state == 'running':
-            draw_board(screen)
+            draw_board(screen, selected_algorithm)
             if selected_algorithm == "DFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(dfs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path,"DFS")
                 state = 'menu'  
             if selected_algorithm == "BFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(bfs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path,"BFS")
                 state = 'menu'
             if selected_algorithm == "A*":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path,"A*")
                 state = 'menu'
             if selected_algorithm == "UCS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(ucs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path,"UCS")
                 state = 'menu'
             if selected_algorithm == "GBFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(gbfs, player, stones)
-                reset_flat = animate_solution(screen, path)
+                reset_flat = animate_solution(screen, path,"GBFS")
                 state = 'menu'
             if selected_algorithm == "Reset":
                 reset_flat = True
@@ -577,7 +608,7 @@ def main():
             if reset_flat == True:
                 reset_value()
                 set_value(filename)  
-                draw_board(screen)  
+                draw_board(screen, "")  
                 state = 'menu' 
                 selected_algorithm = None
                 reset_flat = False
