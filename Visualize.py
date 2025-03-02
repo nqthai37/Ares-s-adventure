@@ -591,7 +591,7 @@ def main():
                 for rect, level in level_rect:
                     if rect.collidepoint(x, y):
                         reset_value()
-                        filename = "Ares-s-adventure/Level/" + level + ".txt"
+                        filename = "Level/" + level + ".txt"
                         set_value(filename)
                         check = 1
                 for rect, algo in button_rects:

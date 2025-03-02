@@ -384,7 +384,7 @@ def main():
     #     print("")\
     for i in range (1,6):
         print ("Level " + str(i))
-        set_value("Level/" + str(i) + ".txt")
+        set_value("Level/Level" + str(i) + ".txt")
         
         (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
         print("Algorithm:", algorithm)
