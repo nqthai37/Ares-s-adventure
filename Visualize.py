@@ -389,10 +389,9 @@ def measure_algorithm(algorithm, player, stones):
     
     return result, elapsed_time
 
-def draw_board(screen, title):
+def draw_board(screen):
     screen.fill((255, 255, 255))
-    draw_title(screen, 60, title)
-    draw_level(screen)
+    level_rects = draw_level(screen)
     button_rects = draw_buttons(screen)
     height = len(matrix)
     for i in range(len(matrix)):
@@ -402,9 +401,9 @@ def draw_board(screen, title):
             pygame.draw.rect(screen, COLORS.get(matrix[i][j], (255, 255, 255)), rect)
             pygame.draw.rect(screen, (0, 0, 0), rect, 1)
     pygame.display.flip()
-    return button_rects
+    return level_rects, button_rects
 
-def animate_solution(screen, solution, title):
+def animate_solution(screen, solution):
     global player
     moves = {'u': (-1, 0), 'd': (1, 0), 'l': (0, -1), 'r': (0, 1)}
     pause = False  # Trạng thái Pause
@@ -466,7 +465,7 @@ def animate_solution(screen, solution, title):
             else:
                 matrix[prev_player_pos[0]][prev_player_pos[1]] = FREE_SPACE
 
-        draw_board(screen, title)
+        draw_board(screen)
         pygame.display.flip()
         time.sleep(0.1)  
 
@@ -490,9 +489,9 @@ def draw_buttons(screen):
         button_rects.append((rect, text))
     return button_rects
 
-def draw_title(screen, tile_size, in_title):
+def draw_title(screen, tile_size):
     font = pygame.font.Font(None, tile_size)  # Giảm kích thước chữ để cân đối hơn
-    title = in_title
+    title = "Ares' Adventure"
     start_x = 10  # Điểm bắt đầu của chữ
     start_y = 50  # Điều chỉnh để tiêu đề không quá cao hoặc thấp
 
@@ -543,31 +542,32 @@ def main():
     while running:
         screen.fill((255, 255, 255))
         button_rects = draw_buttons(screen)
-        draw_board(screen, "")
+        draw_board(screen)
+        
         if state == 'menu':
             button_rects = draw_buttons(screen) 
             level_rect = draw_level(screen)
         elif state == 'running':
-            draw_board(screen, "")
+            draw_board(screen)
             if selected_algorithm == "DFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(dfs, player, stones)
-                reset_flat = animate_solution(screen, path, "DFS")
+                reset_flat = animate_solution(screen, path)
                 state = 'menu'  
             if selected_algorithm == "BFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(bfs, player, stones)
-                reset_flat = animate_solution(screen, path, "BFS")
+                reset_flat = animate_solution(screen, path)
                 state = 'menu'
             if selected_algorithm == "A*":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
-                reset_flat = animate_solution(screen, path, "A*")
+                reset_flat = animate_solution(screen, path)
                 state = 'menu'
             if selected_algorithm == "UCS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(ucs, player, stones)
-                reset_flat = animate_solution(screen, path, "UCS")
+                reset_flat = animate_solution(screen, path)
                 state = 'menu'
             if selected_algorithm == "GBFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(gbfs, player, stones)
-                reset_flat = animate_solution(screen, path, "GBFS")
+                reset_flat = animate_solution(screen, path)
                 state = 'menu'
             if selected_algorithm == "Reset":
                 reset_flat = True
