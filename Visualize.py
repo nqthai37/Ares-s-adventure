@@ -1,3 +1,4 @@
+import os
 import pygame
 import numpy as np
 import time
@@ -34,6 +35,7 @@ distances = dict()
 dead_locks = set()
 weight =0
 steps = 0
+
 class Stone:
     def __init__(self, point, weight):
         self.point = point
@@ -71,7 +73,6 @@ COLORS = {
 def reset_value():
     global matrix, stones_weight, player, stones, switches, paths, walls, distances, dead_locks, weight, steps
 
-    
     matrix = []
     stones_weight = []
     player = None
@@ -419,12 +420,14 @@ def draw_board(screen, title):
     return level_rects, button_rects
 
 def animate_solution(screen, solution, title):
-    global player, weight,steps
+    global player, weight, steps
     moves = {'u': (-1, 0), 'd': (1, 0), 'l': (0, -1), 'r': (0, 1)}
     pause = False
     button_rects = draw_buttons(screen)
     # global  weight
     index = 0
+    weight = 0
+    steps = 0
     while index < len(solution):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -532,7 +535,7 @@ def draw_title(screen, tile_size, in_title):
 
 def draw_level(screen):
     font = pygame.font.Font(None, 36)
-    buttons = [f"Level{i+1}" for i in range(10)] 
+    buttons = [f"Level {i+1}" for i in range(10)] 
     button_rects = []
 
     screen_width = screen.get_width()
@@ -557,6 +560,20 @@ def draw_level(screen):
 
     return button_rects
 
+def output_file(filename, algorithm, steps, weight, node_generated, path, mem_usage, time):
+    if not os.path.exists("Output"):
+        os.makedirs("Output")    
+    if not os.path.exists(filename):
+        with open(filename, "w") as f:
+            f.write(f"{algorithm}")
+            f.write(f"\nSteps: {steps}, Weight: {weight}, Node: {node_generated}, Time(ms): {time}, Memory(MB): {mem_usage}\n")
+            f.write("".join(path))
+            return 
+    with open(filename, "a") as f:
+        f.write(f"\n{algorithm}")
+        f.write(f"\nSteps: {steps}, Weight: {weight}, Node: {node_generated}, Time(ms): {time}, Memory(MB): {mem_usage}\n")
+        f.write("".join(path))
+    
 
 def main():
     global player, stones, weight
@@ -569,6 +586,7 @@ def main():
     selected_algorithm = None
     state = 'menu' 
     check = 0
+    inputfile = ""
     while running:
         screen.fill((255, 255, 255))
         button_rects = draw_buttons(screen)
@@ -584,35 +602,39 @@ def main():
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(dfs, player, stones)
                 reset_flat = animate_solution(screen, path,"DFS")
                 state = 'menu'  
-            if selected_algorithm == "BFS":
+            elif selected_algorithm == "BFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(bfs, player, stones)
                 reset_flat = animate_solution(screen, path,"BFS")
                 state = 'menu'
-            if selected_algorithm == "A*":
+            elif selected_algorithm == "A*":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(Astar, player, stones)
                 reset_flat = animate_solution(screen, path,"A*")
                 state = 'menu'
-            if selected_algorithm == "UCS":
+            elif selected_algorithm == "UCS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(ucs, player, stones)
                 reset_flat = animate_solution(screen, path,"UCS")
                 state = 'menu'
-            if selected_algorithm == "GBFS":
+            elif selected_algorithm == "GBFS":
                 (algorithm, steps, weight, node_generated, path, mem_usage), time = measure_algorithm(gbfs, player, stones)
                 reset_flat = animate_solution(screen, path,"GBFS")
                 state = 'menu'
-            if selected_algorithm == "Reset":
+            elif selected_algorithm == "Reset":
                 reset_flat = True
                 state = 'menu'
-            if selected_algorithm == "Pause":
+            elif selected_algorithm == "Pause":
                 state = 'menu'
+            if selected_algorithm not in (["Reset", "Pause"]):
+                time *= 1000
+                outputfile = "Output/output-" + inputfile[29:31] + ".txt"
+                output_file(outputfile, algorithm, steps, weight, node_generated, path, mem_usage, time)
             if reset_flat == True:
                 reset_value()
-                set_value(filename)  
+                set_value(inputfile)  
                 draw_board(screen, "")  
                 state = 'menu' 
                 selected_algorithm = None
                 reset_flat = False
-                
+            
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -622,8 +644,10 @@ def main():
                 for rect, level in level_rect:
                     if rect.collidepoint(x, y):
                         reset_value()
-                        filename = "Level/" + level + ".txt"
-                        set_value(filename)
+                        _, level = level.split()
+                        if len(level) == 1: level = "0" + level
+                        inputfile = "Ares-s-adventure/Level/input-" + level + ".txt"
+                        set_value(inputfile)
                         check = 1
                 for rect, algo in button_rects:
                     if rect.collidepoint(x, y) and check == 1:
