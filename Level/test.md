@@ -1,213 +1,217 @@
-Dưới đây là 10 test cases đã được sửa lại, đảm bảo số lượng đá và công tắc bằng nhau, có thêm các bức tường ngăn chặn Ares ở giữa, và chắc chắn có thể giải được. Các test cases được sắp xếp từ dễ đến khó.
-
 ---
 
 ### Test Case 1 (Dễ)
 
 ```
-#####
-#.  #
-# $ #
-# @ #
-#####
+1
+##########
+#@     #.#
+##   ### #
+#  ####  #
+#  ## $  #
+#     #  #
+#   ### ##
+##########
 ```
 
 **Mô tả:**
 
-- 1 đá (`$`) và 1 công tắc (`.`).
-- Ares (`@`) cần đẩy đá vào công tắc.
-- Có tường bao quanh và không có chướng ngại vật phức tạp.
+Kích thước 8x10
+Số lượng đá 1 với khối lượng 1
+Thử thách chỉ có 1 đường qua switch và ma trận rộng gây khó khăn với nhiều đường trống
 
 ---
 
 ### Test Case 2 (Dễ)
 
 ```
-#######
-#.    #
-# $   #
-#     #
-# @   #
-#######
+1
+##########
+#.   #####
+##   #####
+#  ###  ##
+#    #   #
+#    @ $ #
+#  # #   #
+##########
 ```
 
 **Mô tả:**
 
-- 1 đá (`$`) và 1 công tắc (`.`).
-- Ares (`@`) cần đẩy đá vào công tắc.
-- Có thêm không gian trống để di chuyển.
+Kích thước 8x10
+Số lượng đá 1 với khối lượng bằng 1
+Thử thách ma trận rộng có nhiều đường giải yêu. Có thể thử thách tìm đường đi tối ưu cho các thuật toán
 
 ---
 
-### Test Case 3 (Trung bình)
+### Test Case 3 (Dễ)
 
 ```
-#######
-#.    #
-# $   #
-#  #  #
-# @   #
-#######
+1
+########
+###   ##
+# $ # ##
+# #  . #
+#    # #
+## #   #
+##@  ###
+########
 ```
 
 **Mô tả:**
 
-- 1 đá (`$`) và 1 công tắc (`.`).
-- Có một bức tường (`#`) chắn ngang ở giữa, buộc Ares phải đi vòng qua.
-- Ares cần đẩy đá vào công tắc.
+Kích thước 8x8
+Số lượng đá 1 khối lượng 1
+Thử thách nhiều tường ở trong maze tạo thành nhiều đường đi khác nhau, độ phức tạp cũng tăng lên do có nhiều deadlocks
 
 ---
 
 ### Test Case 4 (Trung bình)
 
 ```
-#######
-#. .  #
-# $ $ #
-#  #  #
-# @   #
-#######
+1 5
+########
+###   ##
+# $ # ##
+# #  . #
+#    # #
+##$#.  #
+#@   ###
+########
 ```
 
 **Mô tả:**
 
-- 2 đá (`$`) và 2 công tắc (`.`).
-- Có một bức tường (`#`) chắn ngang ở giữa.
-- Ares cần đẩy cả hai đá vào công tắc.
+Kích thước 8x8
+2 đá với 2 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng
 
 ---
 
 ### Test Case 5 (Trung bình)
 
 ```
-#######
-#. .  #
-# $ $ #
-#  #  #
-# @   #
-#  #  #
-#######
+10 5
+########
+####  ##
+# $   ##
+#  .# ##
+## #.  #
+# @  $ #
+#   ####
+########
 ```
 
 **Mô tả:**
 
-- 2 đá (`$`) và 2 công tắc (`.`).
-- Có hai bức tường (`#`) chắn ngang, tạo thành một hành lang hẹp.
-- Ares cần đẩy cả hai đá vào công tắc.
+Kích thước 8x8
+2 đá với 2 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
-### Test Case 6 (Khó)
+### Test Case 6 (Trung bình)
 
 ```
-#######
-#. .  #
-# $ $ #
-#  #  #
-# @   #
-#  #  #
-#. .  #
-#######
+5 1 
+########
+#####  #
+#   $  #
+# *.#  #
+## ## ##
+#      #
+# @#   #
+#  #####
+########
 ```
 
 **Mô tả:**
 
-- 2 đá (`$`) và 2 công tắc (`.`).
-- Có hai bức tường (`#`) chắn ngang và hai công tắc ở hai phía.
-- Ares cần đẩy cả hai đá vào công tắc.
+Kích thước 9x8
+Số lượng đá 2 với 2 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
-### Test Case 7 (Khó)
+### Test Case 7 (Trung bình)
 
 ```
-#######
-#. .  #
-# $ $ #
-#  #  #
-# @   #
-#  #  #
-#. .  #
-# $ $ #
-#######
+1 5 2
+########
+###   ##
+# $ # ##
+# #  . #
+# .  # #
+##$#.$ #
+#@   ###
+########
 ```
 
 **Mô tả:**
 
-- 4 đá (`$`) và 4 công tắc (`.`).
-- Có hai bức tường (`#`) chắn ngang và bốn công tắc ở hai phía.
-- Ares cần đẩy cả bốn đá vào công tắc.
+Kích thước 8x8
+Số lượng đá 3 với 3 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
 ### Test Case 8 (Khó)
 
 ```
-#######
-#. .  #
-# $ $ #
-#  #  #
-# @   #
-#  #  #
-#. .  #
-# $ $ #
-#  #  #
-#######
+10 1 3
+########
+#   #  #
+# # #$.#
+#    $.#
+# # #$.#
+#   #  #
+#####@ #
+########
 ```
 
 **Mô tả:**
 
-- 4 đá (`$`) và 4 công tắc (`.`).
-- Có ba bức tường (`#`) chắn ngang, tạo thành một mê cung đơn giản.
-- Ares cần đẩy cả bốn đá vào công tắc.
+Kích thước 8x8
+Số lượng đá 3 với 3 khối lượng khác nhau, nhiều vách tường hơn tạo độ khó. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
-### Test Case 9 (Rất khó)
+### Test Case 9 (Khó)
 
 ```
+10 1 3
 #######
-#. .  #
-# $ $ #
-#  #  #
-# @   #
-#  #  #
-#. .  #
-# $ $ #
-#  #  #
-#. .  #
+###  ##
+## . ##
+#@$$$ #
+#. .# #
+# #   #
+#   ###
 #######
 ```
 
 **Mô tả:**
 
-- 4 đá (`$`) và 4 công tắc (`.`).
-- Có ba bức tường (`#`) chắn ngang và bốn công tắc ở hai phía.
-- Ares cần đẩy cả bốn đá vào công tắc.
+Kích thước 8x7
+Số lượng đá 3 với 3 khối lượng khác nhau, vách tường sắp xếp tạo độ khó hơn. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
 ### Test Case 10 (Rất khó)
 
 ```
-###########
-#. . . . #
-# $ $ $ $ #
-#  #  #  #
-# @       #
-#  #  #  #
-#. . . . #
-# $ $ $ $ #
-#  #  #  #
-###########
+99 1 1 
+#########
+#####  ##
+## $   ##
+#  # #$##
+#.@..  ##
+## # #  #
+##   $  #
+##  #####
+#########
 ```
 
 **Mô tả:**
 
-- 8 đá (`$`) và 8 công tắc (`.`).
-- Có nhiều bức tường (`#`) chắn ngang, tạo thành một mê cung phức tạp.
-- Ares cần đẩy cả bốn đá vào công tắc.
+10
+Kích thước 9x9
+Số lượng đá 3 với 3 khối lượng khác nhau, tăng khối lượng lên cao, vách tường sắp xếp tạo độ khó hơn. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
-
-Các test cases này đảm bảo số lượng đá và công tắc bằng nhau, có thêm các bức tường ngăn chặn Ares ở giữa, và chắc chắn có thể giải được. Độ khó tăng dần từ dễ đến rất khó, giúp người chơi có thể làm quen và nâng cao kỹ năng chơi Sokoban.
