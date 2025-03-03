@@ -399,6 +399,8 @@ def draw_board(screen, title):
     draw_title(screen, TILE_SIZE, title)
     level_rects = draw_level(screen)
     button_rects = draw_buttons(screen)
+    pause_rect = draw_pause_button(screen, False)
+    button_rects.append((pause_rect, "Pause"))
     height = len(matrix)
     font = pygame.font.Font(None, 30)
 
@@ -423,8 +425,9 @@ def animate_solution(screen, solution, title):
     global player, weight, steps
     moves = {'u': (-1, 0), 'd': (1, 0), 'l': (0, -1), 'r': (0, 1)}
     pause = False
-    button_rects = draw_buttons(screen)
-    # global  weight
+    button_rects = draw_buttons(screen)  
+    pause_rect = draw_pause_button(screen, pause)
+    button_rects.append((pause_rect, "Pause"))
     index = 0
     weight = 0
     steps = 0
@@ -437,8 +440,11 @@ def animate_solution(screen, solution, title):
                 x, y = event.pos
                 for rect, algo in button_rects:
                     if rect.collidepoint(x, y):
-                        if algo == "Pause":
+                        if algo == "Pause" or algo == "Continue":
                             pause = not pause
+                            pause_rect = draw_pause_button(screen, pause)
+                            button_rects[6] = (pause_rect, "Continue" if pause else "Pause")
+                            pygame.display.flip()
                         elif algo == "Reset":
                             return True
 
@@ -509,7 +515,7 @@ def draw_steps_and_weight(screen, steps, weight):
 
 def draw_buttons(screen):
     font = pygame.font.Font(None, 36)
-    buttons = ["BFS", "DFS", "A*", "UCS", "GBFS", "Reset", "Pause"]
+    buttons = ["BFS", "DFS", "A*", "UCS", "GBFS", "Reset"]
     button_rects = []
     for i, text in enumerate(buttons):
         rect = pygame.Rect(10 + i * 88, 10, 80, 40) 
@@ -520,6 +526,17 @@ def draw_buttons(screen):
         screen.blit(label, label_rect)
         button_rects.append((rect, text))
     return button_rects
+
+def draw_pause_button(screen, Pause):
+    font = pygame.font.Font(None, 36)
+    rect = pygame.Rect(10+6*88, 10, 120, 40)
+    text = "Pause" if not Pause else "Continue"
+    pygame.draw.rect(screen, (4, 178, 217), rect)
+    pygame.draw.rect(screen, (0, 0, 0), rect, 2)
+    label = font.render(text, True, (255, 255, 255))
+    label_rect = label.get_rect(center=rect.center)
+    screen.blit(label, label_rect)
+    return rect
 
 def draw_title(screen, tile_size, in_title):
     font = pygame.font.SysFont(None, tile_size)  
@@ -587,13 +604,14 @@ def main():
     state = 'menu' 
     check = 0
     inputfile = ""
+    #  = False
     while running:
         screen.fill((255, 255, 255))
-        button_rects = draw_buttons(screen)
+        button_rects = draw_buttons(screen )
         draw_board(screen,"")
         
         if state == 'menu':
-            button_rects = draw_buttons(screen) 
+            button_rects = draw_buttons(screen ) 
             level_rect = draw_level(screen)
 
         elif state == 'running':
@@ -646,7 +664,7 @@ def main():
                         reset_value()
                         _, level = level.split()
                         if len(level) == 1: level = "0" + level
-                        inputfile = "Ares-s-adventure/Level/input-" + level + ".txt"
+                        inputfile = "Level/input-" + level + ".txt"
                         set_value(inputfile)
                         check = 1
                 for rect, algo in button_rects:
