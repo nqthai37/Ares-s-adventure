@@ -83,7 +83,8 @@ Thử thách nhiều tường ở trong maze tạo thành nhiều đường đi 
 **Mô tả:**
 
 Kích thước 8x8
-2 đá với 2 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng
+2 đá với 2 khối lượng khác nhau
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng
 
 ---
 
@@ -104,7 +105,8 @@ Kích thước 8x8
 **Mô tả:**
 
 Kích thước 8x8
-2 đá với 2 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
+2 đá với 2 khối lượng khác nhau
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
@@ -126,7 +128,8 @@ Kích thước 8x8
 **Mô tả:**
 
 Kích thước 9x8
-Số lượng đá 2 với 2 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
+Số lượng đá 2 với 2 khối lượng khác nhau
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
@@ -147,7 +150,8 @@ Số lượng đá 2 với 2 khối lượng khác nhau. Thử thách các thu�
 **Mô tả:**
 
 Kích thước 8x8
-Số lượng đá 3 với 3 khối lượng khác nhau. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
+Số lượng đá 3 với 3 khối lượng khác nhau
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
@@ -168,7 +172,8 @@ Số lượng đá 3 với 3 khối lượng khác nhau. Thử thách các thu�
 **Mô tả:**
 
 Kích thước 8x8
-Số lượng đá 3 với 3 khối lượng khác nhau, nhiều vách tường hơn tạo độ khó. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
+Số lượng đá 3 với 3 khối lượng khác nhau, nhiều vách tường hơn tạo độ khó
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
@@ -189,7 +194,8 @@ Số lượng đá 3 với 3 khối lượng khác nhau, nhiều vách tường 
 **Mô tả:**
 
 Kích thước 8x7
-Số lượng đá 3 với 3 khối lượng khác nhau, vách tường sắp xếp tạo độ khó hơn. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
+Số lượng đá 3 với 3 khối lượng khác nhau, vách tường sắp xếp tạo độ khó hơn
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
 
@@ -212,6 +218,7 @@ Số lượng đá 3 với 3 khối lượng khác nhau, vách tường sắp x�
 
 10
 Kích thước 9x9
-Số lượng đá 3 với 3 khối lượng khác nhau, tăng khối lượng lên cao, vách tường sắp xếp tạo độ khó hơn. Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
+Số lượng đá 3 với 3 khối lượng khác nhau, tăng khối lượng lên cao, vách tường sắp xếp tạo độ khó hơn
+Thử thách các thuật toán trong việc tìm đường và hệ số liên quan đến khối lượng, cùng với nhiều deadlocks hơn
 
 ---
